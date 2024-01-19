@@ -3,7 +3,6 @@
  *
  * SPDX-License-Identifier: CC0-1.0
  */
-
 #include <stdio.h>
 #include <inttypes.h>
 #include "sdkconfig.h"
@@ -11,6 +10,7 @@
 #include "freertos/task.h"
 #include "esp_chip_info.h"
 #include "esp_flash.h"
+#include "freertos/FreeRTOSConfig.h"
 
 void app_main(void)
 {
@@ -45,7 +45,7 @@ void app_main(void)
     for (int i = 10; i >= 0; i--)
     {
         printf("Restarting in %d seconds...\n", i);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        vTaskDelay(configTICK_RATE_HZ);
     }
     printf("Restarting now.\n");
     fflush(stdout);
