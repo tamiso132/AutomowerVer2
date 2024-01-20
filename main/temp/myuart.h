@@ -11,16 +11,15 @@
 */
 
 #include <string.h>
-#include "driver/uart.h"
 #include "esp_private/periph_ctrl.h"
 #include "hal/gpio_types.h"
 #include "hal/uart_hal.h"
 
 typedef enum mode_e
 {
-    Read,
-    Write,
-}
+    mode_Read,
+    mode_Write,
+} mode_e;
 
 typedef struct Ow_t
 {
@@ -28,3 +27,6 @@ typedef struct Ow_t
     mode_e mode;
 
 } Ow_t;
+
+void ow_init(Ow_t *ow);
+void loop_write_F();
