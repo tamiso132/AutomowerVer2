@@ -13,7 +13,7 @@
 #include <string.h>
 #include "esp_private/periph_ctrl.h"
 #include "hal/gpio_types.h"
-#include "hal/uart_hal.h"
+#include "driver/uart.h"
 
 typedef enum mode_e
 {
@@ -25,8 +25,11 @@ typedef struct Ow_t
 {
     uart_port_t uart_num;
     mode_e mode;
+    QueueHandle_t uart_queue;
 
 } Ow_t;
 
 void ow_init(Ow_t *ow);
+void ow_reset_pulse(Ow_t *ow);
+
 void loop_write_F();

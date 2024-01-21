@@ -12,8 +12,12 @@
 #include "esp_task_wdt.h"
 #include "temp/myuart.h"
 
+#define LOG_LOCAL_LEVEL ESP_LOG_VERBOSE
+#include "esp_log.h"
+
 void my_task(void *pvParameters)
 {
+
     while (1)
     {
     }
@@ -21,15 +25,24 @@ void my_task(void *pvParameters)
 
 void app_main(void)
 {
-
-    esp_task_wdt_add(NULL);
+    printf("hello?\n");
     Ow_t ow;
+    printf("hello?\n");
     ow_init(&ow);
-    loop_write_F();
-
+    printf("hello? bro????\n");
+    ow_reset_pulse(&ow);
     while (1)
     {
-        loop_write_F();
-        esp_task_wdt_reset();
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        // esp_err_t t = e
+
+        // if (t != ESP_OK)
+        // {
+        //     printf("error trying to reset\n");
+        // }
+        // else
+        // {
+        //     printf("so it resets???\n");
+        // }
     }
 }
