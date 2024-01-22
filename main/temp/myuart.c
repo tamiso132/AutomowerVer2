@@ -6,7 +6,13 @@
 #include "stdlib.h"
 #include "stdio.h"
 
-#define ONEWIRE_RESET 0x00
+#define ONEWIRE_RESET 0xF0
+
+static const char ONEWIRE_WRITE_ZERO[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+static const char ONEWIRE_WRITE_ONE[] = {0x00};
+
+static const char ONEWIRE_INITATE_READ[] = {0x00};
 
 typedef uint32_t TickType_t;
 #define portMAX_DELAY (TickType_t)0xffffffffUL
@@ -50,6 +56,7 @@ void ow_init(Ow_t *ow)
     };
 
     uart_param_config(uart_num, &uart_config);
+    gpio_set_level(GPIO_NUM_23, 0);
     uart_set_pin(uart_num, GPIO_NUM_23, GPIO_NUM_22, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
     const int uart_buffer_size = 128 * 2;
     //  printf("buffer size %d\n", uart_buffer_size);
@@ -60,7 +67,6 @@ void ow_init(Ow_t *ow)
     uart_driver_install(uart_num, uart_buffer_size,
                         uart_buffer_size, 10, &ow->uart_queue, 0);
 
-    uart_driver_delete(UART_NUM_0);
     printf("does it come here?\n");
     gpio_set_direction(BASE_GPIO, GPIO_MODE_OUTPUT);
     // char *test_str = "This is a test string.\n";
@@ -91,29 +97,23 @@ void loop_write_F()
 
 void ow_reset_pulse(Ow_t *ow)
 {
-    gpio_set_level(BASE_GPIO, 1);
-    uart_set_baudrate(ow->uart_num, 20833);
-    uint8_t *mal = malloc(4);
-    *mal = 'c';
-    printf("\n\nbuffer");
+    uart_set_baudrate(ow->uart_num, 9600);
     fflush(stdout);
-    uart_write_bytes(ow->uart_num, mal, 1);
-    uart_wait_tx_done(ow->uart_num, 1000);
+    uint8_t write = 0xF0;
+    uart_write_bytes(ow->uart_num, &write, 1);
 
-    gpio_set_level(BASE_GPIO, 0);
-
-    int8_t *read_buffer = malloc(4);
-    int read_bytes = uart_read_bytes(ow->uart_num, read_buffer, 4, portMAX_DELAY);
-    printf("\n\nbuffer %d\n", read_bytes);
+    char *read_buffer = malloc(1);
+    int read_bytes = uart_read_bytes(ow->uart_num, read_buffer, 1, portMAX_DELAY);
+    printf("\n\nbuffer %x\n", *read_buffer);
     fflush(stdout);
-
-    free(mal);
 }
 
 // BUFFER WRITES queue
-void ow_write_zero()
+void ow_write_zero(Ow_t *ow)
 {
-    // baudrate 115200 , 8.68055555556 us
+    uart_set_baudrate(ow->uart_num, 115200); // 8.6806 us per bit
+    uart_write_bytes(ow->uart_num, (const char *)&WRITE_ZERO, sizeof(WRITE_ZERO));
+    uart_wait_tx_done(ow->uart_num, portMAX_DELAY);
 }
 
 void ow_uart_read_byte()
