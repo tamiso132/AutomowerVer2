@@ -8,16 +8,12 @@
 
 #define ONEWIRE_RESET 0xF0
 
-static const char ONEWIRE_WRITE_ZERO[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-
-static const char ONEWIRE_WRITE_ONE[] = {0x00};
-
-static const char ONEWIRE_INITATE_READ[] = {0x00};
-
 typedef uint32_t TickType_t;
 #define portMAX_DELAY (TickType_t)0xffffffffUL
 
 #define BASE_GPIO GPIO_NUM_19
+
+#define MASK_FAMILY 0xFF
 
 void test_function()
 {
@@ -95,29 +91,122 @@ void loop_write_F()
     free(test_str);
 }
 
-void ow_reset_pulse(Ow_t *ow)
+void ow_reset_pulse(const Ow_t *ow)
 {
     uart_set_baudrate(ow->uart_num, 9600);
     fflush(stdout);
     uint8_t write = 0xF0;
     uart_write_bytes(ow->uart_num, &write, 1);
 
-    char *read_buffer = malloc(1);
-    int read_bytes = uart_read_bytes(ow->uart_num, read_buffer, 1, portMAX_DELAY);
-    printf("\n\nbuffer %x\n", *read_buffer);
+    char read_buffer[1];
+    int read_bytes = uart_read_bytes(ow->uart_num, &read_buffer, 1, portMAX_DELAY);
+
+    printf("Reset pulse: %d\n", read_buffer[0]);
     fflush(stdout);
 }
 
 // BUFFER WRITES queue
-void ow_write_zero(Ow_t *ow)
+// TODO, CAN WRITE MULTPLE AT SAME TIME, OPTIMIZATION
+uint8_t ow_write_zero(const Ow_t *ow)
 {
+    static const char write_zero[] = {0x00};
+    uint8_t x = 0;
     uart_set_baudrate(ow->uart_num, 115200); // 8.6806 us per bit
-    uart_write_bytes(ow->uart_num, (const char *)&WRITE_ZERO, sizeof(WRITE_ZERO));
-    uart_wait_tx_done(ow->uart_num, portMAX_DELAY);
+    uart_write_bytes(ow->uart_num, (const char *)&write_zero, sizeof(write_zero));
+    uart_read_bytes(ow->uart_num, &x, 1, portMAX_DELAY);
+    return x;
 }
 
-void ow_uart_read_byte()
+uint8_t ow_write_one(const Ow_t *ow)
 {
-    // Reset pulse
-    //
+    static const char write_one[] = {0xFF};
+    uint8_t x = 0;
+    uart_set_baudrate(ow->uart_num, 115200); // 8.6806 us per bit
+    uart_write_bytes(ow->uart_num, (const char *)&write_one, sizeof(write_one));
+    uart_read_bytes(ow->uart_num, &x, 1, portMAX_DELAY);
+    return x;
+}
+
+// TODO, there can be numerious read after each other instead of using up a cycle
+uint8_t ow_uart_read_bit(const Ow_t *ow)
+{
+    const char initiate_read[] = {0xFF}; // hold for at least 1 micro second
+
+    uart_set_baudrate(ow->uart_num, 115200);                              // 8.6806 us per bit
+    uart_write_bytes(ow->uart_num, initiate_read, sizeof(initiate_read)); // start bit pulls low for 8
+    char buffer[1];
+    uart_read_bytes(ow->uart_num, &buffer, sizeof(buffer), portMAX_DELAY); // first bit tells
+    return buffer[0];
+}
+
+void ow_write_bytes(const Ow_t *ow, uint8_t byte)
+{
+    for (int i = 0; i < 8; i++)
+    {
+        uint8_t send_bit = (byte >> i) & 1;
+        if (send_bit == 0)
+        {
+            ow_write_zero(ow);
+        }
+        else
+        {
+            ow_write_one(ow);
+        }
+    }
+}
+
+uint64_t rom_search(const Ow_t *ow)
+{
+    uint8_t device_collision = 0;
+    uint8_t device_1 = 3;
+    uint8_t device_0 = 1;
+
+    ow_reset_pulse(ow);
+
+    const uint8_t opcode = 0xF0;
+
+    ow_write_bytes(ow, opcode);
+
+    printf("########################################################\n");
+
+    uint64_t data = 0;
+    for (int i = 0; i < 63; i++)
+    {
+        uint8_t least_significant = ow_uart_read_bit(ow);
+        uint8_t most_significant = ow_uart_read_bit(ow);
+
+        uint8_t bit = least_significant & 1;
+        uint8_t bit_2 = most_significant & 1;
+
+        uint8_t read = bit | bit_2 << 1;
+
+        printf("Read: %d\n", read);
+        if (read == 0)
+        {
+            ow_write_zero(ow);
+        }
+        else if (read == device_1)
+        {
+            data = data | 1 << i;
+            ow_write_one(ow);
+        }
+        else if (read == device_0)
+        {
+            ow_write_zero(ow);
+        }
+    }
+
+    printf("Data: %llu\n", data);
+    return data;
+}
+
+uint64_t get_family(uint64_t data)
+{
+    return (uint64_t)(data & 0xFF);
+}
+uint64_t get_serial(uint64_t data)
+{
+    data = (data << 8);  // delete CRC
+    data = (data >> 16); // delete family
+    return data;
 }

@@ -30,6 +30,18 @@ typedef struct Ow_t
 } Ow_t;
 
 void ow_init(Ow_t *ow);
-void ow_reset_pulse(Ow_t *ow);
+void ow_reset_pulse(const Ow_t *ow);
 
 void loop_write_F();
+
+uint64_t get_serial(uint64_t data);
+
+uint64_t get_family(uint64_t data);
+
+uint64_t rom_search(const Ow_t *ow);
+
+uint8_t ow_uart_read_bit(const Ow_t *ow);
+
+uint8_t ow_write_one(const Ow_t *ow);
+
+uint8_t ow_write_zero(const Ow_t *ow);

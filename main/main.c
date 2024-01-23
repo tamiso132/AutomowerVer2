@@ -29,11 +29,15 @@ void app_main(void)
     Ow_t ow;
     printf("hello?\n");
     ow_init(&ow);
-    printf("hello? bro????\n");
-    ow_reset_pulse(&ow);
+
+    uint64_t device_code = rom_search(&ow);
+
+    printf("family code %llu\n", get_family(device_code));
+    printf("Serial code %llu\n", get_serial(device_code));
+
     while (1)
     {
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+
         // esp_err_t t = e
 
         // if (t != ESP_OK)
