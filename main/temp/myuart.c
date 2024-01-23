@@ -137,7 +137,6 @@ uint8_t ow_uart_read_bit(const Ow_t *ow)
     uart_write_bytes(ow->uart_num, initiate_read, sizeof(initiate_read)); // start bit pulls low for 8
     char buffer[1];
     uart_read_bytes(ow->uart_num, &buffer, sizeof(buffer), portMAX_DELAY); // first bit tells
-    ESP_LOGD("Read value", "%x", buffer[0]);
     return buffer[0];
 }
 
@@ -149,12 +148,10 @@ void ow_write_bytes(const Ow_t *ow, uint8_t byte)
         if (send_bit == 0)
         {
             uint8_t x = ow_write_zero(ow);
-            ESP_LOGD("Write-0", "%d", x);
         }
         else
         {
             uint8_t x = ow_write_one(ow);
-            ESP_LOGD("Write-1", "%d", x);
         }
         byte >>= 1;
     }
@@ -173,25 +170,22 @@ uint64_t rom_search(const Ow_t *ow)
     printf("########################################################\n");
 
     uint64_t data = 0;
-    for (int i = 0; i < 63; i++)
+    for (int i = 0; i < 64; i++)
     {
         uint8_t least_significant = ow_uart_read_bit(ow);
         uint8_t most_significant = ow_uart_read_bit(ow);
 
         uint8_t bit = least_significant & 1;
 
-        printf("Least: %d\n", bit);
-
         if (bit == 1)
         {
-            data |= (1 << i);
+            data |= (((uint64_t)1) << i);
             printf("i value: %d\n", i);
             printf("8 bits: %d\n", (uint8_t)(data & 0xFF));
             ow_write_one(ow);
         }
         else if (bit == 0)
         {
-            printf("zero time\n");
             ow_write_zero(ow);
         }
     }
