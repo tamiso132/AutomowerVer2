@@ -25,14 +25,12 @@ void my_task(void *pvParameters)
 
 void app_main(void)
 {
-    printf("hello?\n");
     Ow_t ow;
-    printf("hello?\n");
     ow_init(&ow);
 
     uint64_t device_code = rom_search(&ow);
 
-    printf("family code %llu\n", get_family(device_code));
+    printf("family code %d\n", get_family(device_code));
     printf("Serial code %llu\n", get_serial(device_code));
 
     while (1)

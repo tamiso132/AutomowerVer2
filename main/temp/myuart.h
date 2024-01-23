@@ -36,7 +36,7 @@ void loop_write_F();
 
 uint64_t get_serial(uint64_t data);
 
-uint64_t get_family(uint64_t data);
+uint8_t get_family(uint64_t data);
 
 uint64_t rom_search(const Ow_t *ow);
 
