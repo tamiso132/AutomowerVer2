@@ -1,47 +1,8 @@
 #pragma once
-/* UART 1-wire (OneWire) Free RTOS Periherial OW_UART Driver
- *
- * Created by Stanislav Lakhtin on 06.01.2020.
-
-   This example code is in the Public Domain (or CC0 licensed, at your option.)
-
-   Unless required by applicable law or agreed to in writing, this
-   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY KIND, either express or implied.
-*/
 
 #include <string.h>
-#include "esp_private/periph_ctrl.h"
-#include "hal/gpio_types.h"
 #include "driver/uart.h"
 
-typedef enum mode_e
-{
-    mode_Read,
-    mode_Write,
-} mode_e;
-
-typedef struct Ow_t
-{
-    uart_port_t uart_num;
-    mode_e mode;
-    QueueHandle_t uart_queue;
-
-} Ow_t;
-
-void ow_init(Ow_t *ow);
-void ow_reset_pulse(const Ow_t *ow);
-
-void loop_write_F();
-
-uint64_t get_serial(uint64_t data);
-
-uint8_t get_family(uint64_t data);
-
-uint64_t rom_search(const Ow_t *ow);
-
-uint8_t ow_uart_read_bit(const Ow_t *ow);
-
-uint8_t ow_write_one(const Ow_t *ow);
-
-uint8_t ow_write_zero(const Ow_t *ow);
+uint8_t myuart_init();
+uint8_t myuart_read_time_slot(uint8_t uart_num);
+void myuart_write_bytes(uint8_t uart_num, uint8_t *p_byte, size_t length);
