@@ -152,21 +152,33 @@ static uint8_t calculate_crc8(const uint8_t *data, size_t length)
     return crc;
 }
 
-static uint8_t calculate_temp(uint16_t temp, EBitRes res)
+static float calculate_temp(uint16_t temp, EBitRes res)
 {
-    // GET FRACTION
-    float temp = 0;
-    uint8_t val = (temp & 0xFF) >> (uint8_t)res;
+    float temp_celsius = 0;
+    uint8_t fraction_bits = (temp & 0x0F) >> (uint8_t)res;
+    uint8_t signed_bits = (temp >> 11);
+    uint8_t whole_number_bits = (uint8_t)(temp >> 4);
 
-    float fraction_add = (1 << (uint8_t)res) * TEMP_LOWEST_FRACTION;
-    for (int i = 1; i < 9; i++)
+    uint8_t signed_bits_extend = signed_bits | signed_bits << 2;
+
+    int8_t whole_value = whole_number_bits ^ signed_bits_extend;
+
+    /// Fraction value depending on resolution
+    /// 0.0625, 0.125,  0.25, 0.5
+    float fraction_add = (1 << (uint8_t)res) * TEMP_LOWEST_FRACTION * (-1 + (int8_t)(signed_bits & 2));
+
+    /// Active bits, lower resolution, has higher fraction bits,
+    // therfor bits get inactive, the lower resolution
+    int active_fraction_bits = 4 - res;
+
+    for (int i = 0; i < active_fraction_bits; i++)
     {
-        temp +=
+        temp_celsius += (fraction_bits << i) * fraction_add;
     }
+    printf("t before whole: %f\n", temp_celsius);
+    temp_celsius += (float)whole_value;
 
-    // GET WHOLE NUMBER
-
-    // KNOW IF NEGATIVE
+    return temp_celsius;
 }
 
 static void onewire_write_bytes(const Onewire_t *ow, uint8_t *p_byte, size_t length)
