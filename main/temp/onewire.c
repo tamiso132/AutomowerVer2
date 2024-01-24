@@ -152,31 +152,27 @@ static uint8_t calculate_crc8(const uint8_t *data, size_t length)
     return crc;
 }
 
-static float calculate_temp(uint16_t temp, EBitRes res)
+float calculate_temp(uint16_t temp, EBitRes res)
 {
+
     float temp_celsius = 0;
-    uint8_t fraction_bits = (temp & 0x0F) >> (uint8_t)res;
+
     uint8_t signed_bits = (temp >> 11);
+    uint8_t sign_bit = signed_bits & 1;
+
     uint8_t whole_number_bits = (uint8_t)(temp >> 4);
 
-    uint8_t signed_bits_extend = signed_bits | signed_bits << 2;
+    uint16_t signed_bits_extend = signed_bits | (signed_bits << 3);
 
-    int8_t whole_value = whole_number_bits ^ signed_bits_extend;
+    uint16_t whole_value = whole_number_bits ^ signed_bits_extend;
 
     /// Fraction value depending on resolution
     /// 0.0625, 0.125,  0.25, 0.5
-    float fraction_add = (1 << (uint8_t)res) * TEMP_LOWEST_FRACTION * (-1 + (int8_t)(signed_bits & 2));
+    float fraction = ((float)((temp & 0x00F))) / (1 << (4 - res)) - (signed_bits & 1);
 
-    /// Active bits, lower resolution, has higher fraction bits,
-    // therfor bits get inactive, the lower resolution
-    int active_fraction_bits = 4 - res;
-
-    for (int i = 0; i < active_fraction_bits; i++)
-    {
-        temp_celsius += (fraction_bits << i) * fraction_add;
-    }
-    printf("t before whole: %f\n", temp_celsius);
     temp_celsius += (float)whole_value;
+    *(uint32_t *)&temp_celsius ^= ((uint32_t)sign_bit) << (31);
+    temp_celsius += fraction;
 
     return temp_celsius;
 }
