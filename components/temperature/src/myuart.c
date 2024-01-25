@@ -29,7 +29,11 @@ uint8_t myuart_init()
     const int uart_buffer_size = 128 * 2;
 
     uart_driver_install(uart_num, uart_buffer_size,
-                        uart_buffer_size, 0, NULL, 0);
+                        uart_buffer_size, 100, NULL, 0);
+    uint32_t baud_rate;
+    uart_get_baudrate(uart_num, &baud_rate);
+
+    printf("UART: %ld\n", baud_rate);
 
     return uart_num;
 }
@@ -37,16 +41,14 @@ uint8_t myuart_init()
 // TODO, there can be numerious read after each other instead of using up a cycle
 uint8_t myuart_read_time_slot(uint8_t uart_num)
 {
-    const uint8_t initiate_read = 0xFF; // hold for at least 1 micro second
-    uart_write_bytes(uart_num, &initiate_read, 1);
-    uart_write_bytes(uart_num, initiate_read, sizeof(initiate_read)); // start bit pulls low for 8
+    uint8_t initiate_read[] = {0xFF}; // hold for at least 1 micro second
     char buffer[1];
-    uart_read_bytes(uart_num, &buffer, sizeof(buffer), portMAX_DELAY); // first bit tells
+    uart_write_bytes(uart_num, &initiate_read, 1);           // start bit pulls low for 8
+    uart_read_bytes(uart_num, &buffer[0], 1, portMAX_DELAY); // first bit tells
     return buffer[0];
 }
 
-void myuart_write_bytes(uint8_t uart_num, uint8_t *p_byte, size_t length)
+void myuart_write_bytes(uint8_t uart_num, const uint8_t *p_byte, size_t length)
 {
-
     uart_write_bytes(uart_num, p_byte, length);
 }

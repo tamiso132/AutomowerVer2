@@ -16,6 +16,7 @@ typedef enum EBitRes
 typedef struct Onewire_t
 {
     uint8_t uart_num;
+    uint64_t serial_number;
 
 } Onewire_t;
 
@@ -24,3 +25,7 @@ typedef struct Temp_t
     size_t length;
     int data;
 } Temp_t;
+
+void onewire_init(Onewire_t *ow);
+uint64_t onewire_scan(Onewire_t *ow);
+float ds_get_all_temp(const Onewire_t *ow);

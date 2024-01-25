@@ -10,28 +10,22 @@
 #include "esp_chip_info.h"
 #include "esp_flash.h"
 #include "esp_task_wdt.h"
-#include "temp/myuart.h"
 
 #define LOG_LOCAL_LEVEL ESP_LOG_VERBOSE
 #include "esp_log.h"
 
-void my_task(void *pvParameters)
-{
-
-    while (1)
-    {
-    }
-}
+#include "onewire.h"
 
 void app_main(void)
 {
-    // Ow ow;
-    // myuart_init(&ow);
+    Onewire_t ow;
+    onewire_init(&ow);
 
-    // uint64_t device_code = rom_search(&ow);
+    onewire_scan(&ow);
 
-    // printf("family code %d\n", get_family(device_code));
-    // printf("Serial code %llu\n", get_serial(device_code));
+    float temp = ds_get_all_temp(&ow);
+
+    printf("temperature: %f\n", temp);
 
     while (1)
     {
