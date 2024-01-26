@@ -20,7 +20,7 @@
 void app_main(void)
 {
     // onewire_t ow;
-    // onewire_init(&ow, 1, GPIO_NUM_23, GPIO_NUM_22);
+    // onewire_init(&ow, 2, GPIO_NUM_23, GPIO_NUM_22);
 
     // onewire_scan(&ow);
 
