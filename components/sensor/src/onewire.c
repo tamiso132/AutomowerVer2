@@ -52,22 +52,22 @@ static uint8_t get_family(uint64_t data);
 static uint64_t get_serial(uint64_t data);
 
 // onewire
-static void ow_reset_pulse(const Onewire_t *ow);
-static void ow_read_scratchpad(const Onewire_t *ow, uint64_t serial_number, size_t bytes_read, uint8_t *data);
+static void ow_reset_pulse(const onewire_t *ow);
+static void ow_read_scratchpad(const onewire_t *ow, uint64_t serial_number, size_t bytes_read, uint8_t *data);
 
-static void onewire_write_bytes(const Onewire_t *ow, const uint8_t *p_byte, size_t length);
-static void onewire_write_bit(const Onewire_t *ow, uint8_t bit);
+static void onewire_write_bytes(const onewire_t *ow, const uint8_t *p_byte, size_t length);
+static void onewire_write_bit(const onewire_t *ow, uint8_t bit);
 
-static void onewire_read_bytes(const Onewire_t *ow, size_t length, uint8_t *data_read);
+static void onewire_read_bytes(const onewire_t *ow, size_t length, uint8_t *data_read);
 static float calculate_temp(uint16_t temp, EBitRes res);
 
-void onewire_init(Onewire_t *ow)
+void onewire_init(onewire_t *ow, uint8_t uart_num, gpio_num_t tx_pin, gpio_num_t rx_pin)
 {
-    ow->uart_num = myuart_init();
+    ow->uart_num = myuart_init(uart_num, tx_pin, rx_pin);
 }
 
 // implement, finding all devices
-uint64_t onewire_scan(Onewire_t *ow)
+uint64_t onewire_scan(onewire_t *ow)
 {
     ow_reset_pulse(ow);
 
@@ -97,7 +97,7 @@ uint64_t onewire_scan(Onewire_t *ow)
 
     uint8_t crc = data >> (64 - 8);
     uint8_t cal_crc = calculate_crc8((const uint8_t *)&data, 7);
-    if (calculate_crc8((const uint8_t *)&data, 7) == crc)
+    if (cal_crc == crc)
     {
         printf("Serial: %llx\n", data);
     }
@@ -110,10 +110,10 @@ uint64_t onewire_scan(Onewire_t *ow)
     return data;
 }
 
-float ds_get_all_temp(const Onewire_t *ow)
+float onewire_get_temp(const onewire_t *ow)
 {
 
-    uint8_t *nr = &ow->serial_number;
+    uint8_t *nr = (uint8_t *)&ow->serial_number;
     const uint8_t command[] = {ROM_MATCH, nr[0], nr[1], nr[2], nr[3], nr[4], nr[5], nr[6], nr[7], FUNC_TEMP_CONVERT};
 
     ow_reset_pulse(ow);
@@ -121,7 +121,6 @@ float ds_get_all_temp(const Onewire_t *ow)
     onewire_write_bytes(ow, command, sizeof(command));
 
     // match all known devices, and check their temp
-    uint8_t is_conversion = myuart_read_time_slot(ow->uart_num);
     uint8_t bit = (myuart_read_time_slot(ow->uart_num) & 1);
     while (!bit)
     {
@@ -130,18 +129,30 @@ float ds_get_all_temp(const Onewire_t *ow)
         bit = (myuart_read_time_slot(ow->uart_num) & 1);
     }
 
-    uint8_t temp[9];
+    uint8_t data[9];
 
-    ow_read_scratchpad(ow, ow->serial_number, sizeof(temp), temp);
-    uint8_t config = temp[4] & 0xFF;
+    ow_read_scratchpad(ow, ow->serial_number, sizeof(data), data);
 
-    uint16_t t = *((uint16_t *)temp);
+    uint16_t temp = *((uint16_t *)data);
 
-    printf("Temp: %d\n", t);
-    return calculate_temp(t, BIT_TWELVE_RES);
+    return calculate_temp(temp, BIT_TWELVE_RES);
 }
 
-static void ow_reset_pulse(const Onewire_t *ow)
+EBitRes get_res_state(const onewire_t *ow)
+{
+    uint64_t data;
+    ow_read_scratchpad(ow, ow->serial_number, sizeof(data), (uint8_t *)&data);
+    uint8_t config = ((uint8_t *)&data)[4] & 0xFF;
+    uint8_t R = (config >> 5) | ((config >> 6) << 1);
+
+    // R = 3, 12
+    // R = 2, 11
+    // R = 1, 10
+    // R = 0, 9
+    return (EBitRes)(3 - R);
+}
+
+static void ow_reset_pulse(const onewire_t *ow)
 {
     uart_set_baudrate(ow->uart_num, 9600);
     fflush(stdout);
@@ -149,7 +160,7 @@ static void ow_reset_pulse(const Onewire_t *ow)
     uart_write_bytes(ow->uart_num, &write, 1);
 
     char read_buffer[1];
-    int read_bytes = uart_read_bytes(ow->uart_num, &read_buffer, 1, portMAX_DELAY);
+    uart_read_bytes(ow->uart_num, &read_buffer, 1, portMAX_DELAY);
 
     uart_set_baudrate(ow->uart_num, 115200);
 
@@ -157,7 +168,7 @@ static void ow_reset_pulse(const Onewire_t *ow)
     fflush(stdout);
 }
 
-static void ow_read_scratchpad(const Onewire_t *ow, uint64_t serial_number, size_t bytes_read, uint8_t *data)
+static void ow_read_scratchpad(const onewire_t *ow, uint64_t serial_number, size_t bytes_read, uint8_t *data)
 {
     ow_reset_pulse(ow);
     uint8_t *serial = (uint8_t *)&serial_number;
@@ -217,7 +228,7 @@ static float calculate_temp(uint16_t temp, EBitRes res)
     return temp_celsius;
 }
 
-static void onewire_write_bytes(const Onewire_t *ow, const uint8_t *p_byte, size_t length)
+static void onewire_write_bytes(const onewire_t *ow, const uint8_t *p_byte, size_t length)
 {
     uint8_t r[length * 8];
     for (int byte_nr = 0; byte_nr < length; byte_nr++)
@@ -233,7 +244,7 @@ static void onewire_write_bytes(const Onewire_t *ow, const uint8_t *p_byte, size
     uart_read_bytes(ow->uart_num, &r, sizeof(r), portMAX_DELAY);
 }
 
-static void onewire_write_bit(const Onewire_t *ow, uint8_t bit)
+static void onewire_write_bit(const onewire_t *ow, uint8_t bit)
 {
     uint8_t send_bit = ~bit + 1;
     uint8_t r = 0;
@@ -241,7 +252,7 @@ static void onewire_write_bit(const Onewire_t *ow, uint8_t bit)
     uart_read_bytes(ow->uart_num, &r, 1, portMAX_DELAY);
 }
 
-static void onewire_read_bytes(const Onewire_t *ow, size_t length, uint8_t *data_read)
+static void onewire_read_bytes(const onewire_t *ow, size_t length, uint8_t *data_read)
 {
     for (size_t byte_nr = 0; byte_nr < length; byte_nr++)
     {
@@ -261,23 +272,4 @@ float calcf(uint16_t input)
     float fraction = 1 - (float)(input & 0b1111) / 16;
     float integer = (uint8_t)((s ? ~input : input) >> 4);
     return (integer + fraction) * (s ? -1 : 1);
-}
-
-EBitRes get_res_state(Onewire_t *ow)
-{
-    uint64_t data;
-    ow_read_scratchpad(ow, ow->serial_number, sizeof(data), (uint8_t *)&data);
-    uint8_t config = ((uint8_t *)&data)[4] & 0xFF;
-    uint8_t R = (config >> 5) | ((config >> 6) << 1);
-
-    switch (R)
-    {
-        
-    case /* constant-expression */:
-        /* code */
-        break;
-    
-    default:
-        break;
-    }
 }

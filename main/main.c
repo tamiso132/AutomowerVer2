@@ -15,30 +15,25 @@
 #include "esp_log.h"
 
 #include "onewire.h"
+#include "sensor_avoid.h"
 
 void app_main(void)
 {
-    Onewire_t ow;
-    onewire_init(&ow);
+    // onewire_t ow;
+    // onewire_init(&ow, 1, GPIO_NUM_23, GPIO_NUM_22);
 
-    onewire_scan(&ow);
+    // onewire_scan(&ow);
 
-    float temp = ds_get_all_temp(&ow);
+    // float temp = onewire_get_temp(&ow);
 
-    printf("temperature: %f\n", temp);
+    // printf("temperature: %f\n", temp);
+    sensor_avoid_t avoid;
+    init_sensor(&avoid, GPIO_NUM_15);
 
+    int cnt = 0;
     while (1)
     {
-
-        // esp_err_t t = e
-
-        // if (t != ESP_OK)
-        // {
-        //     printf("error trying to reset\n");
-        // }
-        // else
-        // {
-        //     printf("so it resets???\n");
-        // }
+        printf("cnt: %d\n", cnt++);
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 }

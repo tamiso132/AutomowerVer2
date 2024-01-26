@@ -12,9 +12,9 @@ typedef uint32_t TickType_t;
 
 #define BASE_GPIO GPIO_NUM_19
 
-uint8_t myuart_init()
+uint8_t myuart_init(uint8_t uart_port, gpio_num_t tx_pin, gpio_num_t rx_pin)
 {
-    const uint8_t uart_num = UART_NUM_1;
+    const uint8_t uart_num = uart_port;
     uart_config_t uart_config = {
         .baud_rate = 115200,
         .data_bits = UART_DATA_8_BITS,
@@ -25,7 +25,7 @@ uint8_t myuart_init()
     };
 
     uart_param_config(uart_num, &uart_config);
-    uart_set_pin(uart_num, GPIO_NUM_23, GPIO_NUM_22, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+    uart_set_pin(uart_num, tx_pin, rx_pin, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
     const int uart_buffer_size = 128 * 2;
 
     uart_driver_install(uart_num, uart_buffer_size,

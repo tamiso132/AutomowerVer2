@@ -7,3 +7,6 @@ https://www.analog.com/en/technical-articles/successful-pcb-grounding-with-mixed
 
 to reset
 esptool.py --no-stub -p /dev/ttyUSB0 flash_id
+
+Shift-Alt-G, hover affect
+idf.py reconfigure

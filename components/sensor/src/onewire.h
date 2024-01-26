@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#include <driver/gpio.h>
+
 typedef enum EBitRes
 {
     BIT_TWELVE_RES = 0,
@@ -13,19 +15,19 @@ typedef enum EBitRes
 
 } EBitRes;
 
-typedef struct Onewire_t
+typedef struct onewire_t
 {
     uint8_t uart_num;
     uint64_t serial_number;
 
-} Onewire_t;
+} onewire_t;
 
-typedef struct Temp_t
+typedef struct temp_t
 {
     size_t length;
     int data;
-} Temp_t;
+} temp_t;
 
-void onewire_init(Onewire_t *ow);
-uint64_t onewire_scan(Onewire_t *ow);
-float ds_get_all_temp(const Onewire_t *ow);
+void onewire_init(onewire_t *ow, uint8_t uart_num, gpio_num_t tx_pin, gpio_num_t rx_pin);
+uint64_t onewire_scan(onewire_t *ow);
+float onewire_get_temp(const onewire_t *ow);
