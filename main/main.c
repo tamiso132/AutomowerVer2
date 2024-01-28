@@ -17,6 +17,8 @@
 #include "onewire.h"
 #include "sensor_avoid.h"
 
+#include "display_st7735s.h"
+
 void app_main(void)
 {
     // onewire_t ow;
@@ -27,8 +29,10 @@ void app_main(void)
     // float temp = onewire_get_temp(&ow);
 
     // printf("temperature: %f\n", temp);
-    sensor_avoid_t avoid;
-    init_sensor(&avoid, GPIO_NUM_15);
+    // sensor_avoid_t avoid;
+    // init_sensor(&avoid, GPIO_NUM_15);
+
+    init_display();
 
     int cnt = 0;
     while (1)

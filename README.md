@@ -10,3 +10,4 @@ esptool.py --no-stub -p /dev/ttyUSB0 flash_id
 
 Shift-Alt-G, hover affect
 idf.py reconfigure
+idf.py menuconfig
